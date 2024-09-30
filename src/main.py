@@ -141,13 +141,12 @@ if __name__ == "__main__":
 
                 with console.status("Generating response...", spinner="earth"):
                     response = get_llm_response(text)
-                    print(response)
-                    sample_rate, audio_array = text_to_speech.synthesize_long_text(
-                        response
-                    )
+                    # sample_rate, audio_array = text_to_speech.synthesize_long_text(
+                    #     response
+                    # )
 
                 console.print(f"[cyan]Assistant: {response}")
-                play_audio(sample_rate, audio_array)
+                # play_audio(sample_rate, audio_array)
             else:
                 console.print(
                     "[red]No audio recorded. Please ensure your microphone is working."
