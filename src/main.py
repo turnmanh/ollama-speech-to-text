@@ -1,3 +1,4 @@
+import logging
 import numpy as np
 import time
 import threading
@@ -109,6 +110,8 @@ def play_audio(sample_rate: int, audio_array: np.array):
 
 
 if __name__ == "__main__":
+    # Inserted logging only in the following lines
+    logging.basicConfig(level=logging.INFO)
     console.print("[cyan]Assistant started! Press Ctrl+C to exit.")
 
     try:
@@ -137,10 +140,12 @@ if __name__ == "__main__":
             if audio_np.size > 0:
                 with console.status("Transcribing...", spinner="earth"):
                     text = transcribe(audio_np)
+                    logging.info(f"Transcribed text from audio: {text}")
                 console.print(f"[yellow]You: {text}")
 
                 with console.status("Generating response...", spinner="earth"):
                     response = get_llm_response(text)
+                    logging.info(f"Generated response: {response}")
                     # sample_rate, audio_array = text_to_speech.synthesize_long_text(
                     #     response
                     # )
@@ -149,7 +154,7 @@ if __name__ == "__main__":
                 # play_audio(sample_rate, audio_array)
             else:
                 console.print(
-                    "[red]No audio recorded. Please ensure your microphone is working."
+                    "[red]No audio recorded. Ensure your microphone is working."
                 )
 
     except KeyboardInterrupt:
