@@ -1,3 +1,4 @@
+import langchain
 import logging
 import numpy as np
 import time
@@ -17,6 +18,7 @@ from text_to_speech import TextToSpeech
 console = Console()
 speech_to_text = whisper.load_model("base.en")
 text_to_speech = TextToSpeech()
+langchain.debug = True
 
 template = """
 You are a helpful and friendly AI assistant. You are polite, respectful, and aim
@@ -111,7 +113,8 @@ def play_audio(sample_rate: int, audio_array: np.array):
 
 if __name__ == "__main__":
     # Inserted logging only in the following lines
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(filename="assistant.log", level=logging.WARNING)
+    logger = logging.getLogger(__name__)
     console.print("[cyan]Assistant started! Press Ctrl+C to exit.")
 
     try:
@@ -140,12 +143,12 @@ if __name__ == "__main__":
             if audio_np.size > 0:
                 with console.status("Transcribing...", spinner="earth"):
                     text = transcribe(audio_np)
-                    logging.info(f"Transcribed text from audio: {text}")
+                    logger.info(f"Transcribed text from audio: {text}")
                 console.print(f"[yellow]You: {text}")
 
                 with console.status("Generating response...", spinner="earth"):
                     response = get_llm_response(text)
-                    logging.info(f"Generated response: {response}")
+                    logger.info(f"Generated response: {response}")
                     # sample_rate, audio_array = text_to_speech.synthesize_long_text(
                     #     response
                     # )
