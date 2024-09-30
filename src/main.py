@@ -83,9 +83,9 @@ def transcribe(audio_np: np.ndarray) -> str:
 
 def get_llm_response(text: str) -> str:
     """
-    Generates a response to the given text using the Llama-2 language model.
+    Generates a response to the given text using a language model.
     Args:
-        text (str): The input text to be processed.
+        text: The input text to be processed.
     Returns:
         str: The generated response.
     """
