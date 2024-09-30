@@ -22,10 +22,8 @@ langchain.debug = True
 
 template = """
 You are a helpful and friendly AI assistant. You are polite, respectful, and aim
-to provide concise responses of less than 20 words. The conversation transcript
-is as follows: 
-{history} 
-And here is the user's follow-up: {input} 
+to provide concise responses with as little words as possible. The conversation
+transcript is as follows: {history} And here is the user's follow-up: {input}
 Your response:
 """
 
