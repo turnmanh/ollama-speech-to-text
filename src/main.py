@@ -18,7 +18,7 @@ from text_to_speech import TextToSpeech
 console = Console()
 speech_to_text = whisper.load_model("base.en")
 text_to_speech = TextToSpeech()
-langchain.debug = True
+langchain.debug = False
 
 template = """
 You are a helpful and friendly AI assistant. You are polite, respectful, and aim
