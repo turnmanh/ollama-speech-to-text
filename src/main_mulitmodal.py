@@ -89,7 +89,7 @@ def main(
                         ":clock8:",
                         f"Transcription in {timing['transcribe']:.2f}s.",
                         f"Query in {timing['query']:.2f}s.",
-                        sep="",
+                        sep=" ",
                     )
                 # play_audio(sample_rate, audio_array)
             else:
