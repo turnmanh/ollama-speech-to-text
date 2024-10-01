@@ -8,14 +8,12 @@ from queue import Queue
 from whisper.model import Whisper
 
 
-def record_audio(stop_event: threading.Event, data_queue: Queue):
+def record_audio(stop_event: threading.Event, data_queue: Queue) -> None:
     """
     Captures audio data from the user's microphone and adds it to a queue for further processing.
     Args:
         stop_event: An event that, when set, signals the function to stop recording.
         data_queue: A queue to which the recorded audio data will be added.
-    Returns:
-        None
     """
 
     def callback(indata, frames, time, status):
