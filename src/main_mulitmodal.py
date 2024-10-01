@@ -90,8 +90,8 @@ def main(
                     console.rule("[cyan]Timings")
                     console.print(
                         ":clock8:",
-                        f"Transcription in {timing['transcribe']:.2f}s.",
-                        f"Query in {timing['query']:.2f}s.",
+                        f"[bold]Transcription[/bold] in {timing['transcribe']:.2f}s.",
+                        f"[bold]Total Query[/bold] in {timing['query']:.2f}s.",
                         sep=" ",
                     )
                 # play_audio(sample_rate, audio_array)
