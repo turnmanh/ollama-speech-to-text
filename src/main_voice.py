@@ -1,5 +1,7 @@
+import asyncio
 import langchain
 import logging
+import nest_asyncio
 import numpy as np
 import time
 import threading
@@ -10,6 +12,9 @@ from langchain.memory import ConversationBufferMemory
 from langchain.chains import ConversationChain
 from langchain.prompts import PromptTemplate
 from langchain_community.llms import Ollama, LlamaCpp
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_ollama import ChatOllama
 from queue import Queue
 from rich.console import Console
 from text_to_speech import TextToSpeech
@@ -27,23 +32,36 @@ transcript is as follows: {history} And here is the user's follow-up: {input}
 Your response:
 """
 
-PROMPT = PromptTemplate(input_variables=["history", "input"], template=template)
-chain = ConversationChain(
-    prompt=PROMPT,
-    verbose=False,
-    memory=ConversationBufferMemory(ai_prefix="Aissistant:"),
-    llm=Ollama(
-        model="gemma:2b"
-    ),
-    # llm=LlamaCpp(
-    #     model_path="/home/maternush/Downloads/llama-2-7b-chat.Q5_K_M.gguf",
-    #     temperature=0.75,
-    #     max_tokens=2000,
-    #     top_p=1,
-    #     verbose=False,
-    # ),
-)
+# PROMPT = PromptTemplate(input_variables=["history", "input"], template=template)
+# # chain = ConversationChain(
+#     prompt=PROMPT,
+#     verbose=False,
+#     memory=ConversationBufferMemory(ai_prefix="Aissistant:"),
+#     llm=Ollama(
+#         model="gemma:2b"
+#     ),
+#     # llm=LlamaCpp(
+#     #     model_path="/home/maternush/Downloads/llama-2-7b-chat.Q5_K_M.gguf",
+#     #     temperature=0.75,
+#     #     max_tokens=2000,
+#     #     top_p=1,
+#     #     verbose=False,
+#     # ),
+# )
 
+system_msg = """
+    You are a helpful and friendly AI assistant. You are polite, respectful, and aim
+    to provide concise responses with as little words as possible.
+    """
+prompt = ChatPromptTemplate.from_messages(
+    [
+        ("system", system_msg),
+        ("human", "{input}"),
+    ]
+)
+model = ChatOllama(model="gemma:2b")
+parser = StrOutputParser()
+chain = prompt | model | parser 
 
 def record_audio(stop_event: threading.Event, data_queue: Queue):
     """
@@ -109,6 +127,19 @@ def play_audio(sample_rate: int, audio_array: np.array):
     sd.wait()
 
 
+async def run_chain(text: str) -> None:
+    """Runs the chain as an async generator.
+
+    This allows to print the output of the chain as it is generated, mimicking a
+    lower latency.
+
+    Args:
+        text: input prompt
+    """
+    async for chunk in chain.astream(input=text):
+        print(chunk, end="", flush=True)
+
+
 if __name__ == "__main__":
     # Inserted logging only in the following lines
     logging.basicConfig(filename="assistant.log", level=logging.WARNING)
@@ -120,6 +151,7 @@ if __name__ == "__main__":
 
     console.print("[cyan]Assistant started! Press Ctrl+C to exit.")
 
+    nest_asyncio.apply()
     try:
         while True:
             console.input(
@@ -164,23 +196,21 @@ if __name__ == "__main__":
                 console.rule("[cyan]Transcription")
                 console.print(f"[yellow][bold]Me[/bold]: {text}")
 
-                with console.status("Generating response...", spinner="earth"):
-                    # Timing the response generation.
-                    query_time_start = time.time()
-                    response = get_llm_response(text)
-                    query_time_end = time.time()
-                    timing["query"] = query_time_end - query_time_start
+                console.rule("[cyan]Assistant")
 
-                    logger.info(f"Generated response: {response}")
-                    # sample_rate, audio_array = text_to_speech.synthesize_long_text(
-                    #     response
-                    # )
+                # Timing the response generation.
+                query_time_start = time.time()
+                asyncio.run(run_chain(text))
+                console.print()
+                query_time_end = time.time()
 
-                                    # Print the response separated from the rest of the output and play the audio.
-            console.rule("[cyan]Assistant")
-            console.print(
-                response, overflow="fold"
-            )  # Folding of output on overflow.
+                timing["query"] = query_time_end - query_time_start
+
+                # logger.info(f"Generated response: {response}")
+                # sample_rate, audio_array = text_to_speech.synthesize_long_text(
+                #     response
+                # )
+            
             if timings:
                 console.rule("[cyan]Timings")
                 console.print(
