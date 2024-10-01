@@ -1,5 +1,7 @@
+import asyncio
 import langchain
 import logging
+import nest_asyncio
 import numpy as np
 import time
 import threading
@@ -8,8 +10,10 @@ import sounddevice as sd
 
 from langchain.memory import ConversationBufferMemory
 from langchain.chains import ConversationChain
-from langchain.prompts import PromptTemplate
+from langchain.prompts import PromptTemplate, ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
 from langchain_community.llms import Ollama, LlamaCpp
+from langchain_ollama import ChatOllama
 from queue import Queue
 from rich.console import Console
 from text_to_speech import TextToSpeech
@@ -20,29 +24,42 @@ speech_to_text = whisper.load_model("base.en")
 text_to_speech = TextToSpeech()
 langchain.debug = False
 
+# template = """
+# You are a helpful and friendly AI assistant. You are polite, respectful, and aim
+# to provide concise responses with as little words as possible. The conversation
+# transcript is as follows: {history} And here is the user's follow-up: {input}
+# Your response:
+# """
+
+
 template = """
 You are a helpful and friendly AI assistant. You are polite, respectful, and aim
-to provide concise responses with as little words as possible. The conversation
-transcript is as follows: {history} And here is the user's follow-up: {input}
-Your response:
+to provide concise responses with as little words as possible. Here is the
+user's follow-up: {input} Your response:
 """
 
-PROMPT = PromptTemplate(input_variables=["history", "input"], template=template)
-chain = ConversationChain(
-    prompt=PROMPT,
-    verbose=False,
-    memory=ConversationBufferMemory(ai_prefix="Aissistant:"),
-    llm=Ollama(
-        model="llama3.2:1b"
-    ),
-    # llm=LlamaCpp(
-    #     model_path="/home/maternush/Downloads/llama-2-7b-chat.Q5_K_M.gguf",
-    #     temperature=0.75,
-    #     max_tokens=2000,
-    #     top_p=1,
-    #     verbose=False,
-    # ),
-)
+prompt = ChatPromptTemplate.from_template(template)
+model = ChatOllama(model="gemma:2b")
+parser = StrOutputParser()
+
+chain = prompt | model | parser
+
+# PROMPT = PromptTemplate(input_variables=["history", "input"], template=template)
+# chain = ConversationChain(
+#     prompt=PROMPT,
+#     verbose=False,
+#     memory=ConversationBufferMemory(ai_prefix="Aissistant:"),
+#     llm=Ollama(
+#         model="llama3.2:1b"
+#     ),
+# llm=LlamaCpp(
+#     model_path="/home/maternush/Downloads/llama-2-7b-chat.Q5_K_M.gguf",
+#     temperature=0.75,
+#     max_tokens=2000,
+#     top_p=1,
+#     verbose=False,
+# ),
+# )
 
 
 def record_audio(stop_event: threading.Event, data_queue: Queue):
@@ -82,7 +99,7 @@ def transcribe(audio_np: np.ndarray) -> str:
     return text
 
 
-def get_llm_response(text: str) -> str:
+async def get_llm_response(text: str) -> str:
     """
     Generates a response to the given text using a language model.
     Args:
@@ -90,10 +107,20 @@ def get_llm_response(text: str) -> str:
     Returns:
         str: The generated response.
     """
-    response = chain.predict(input=text)
-    if response.startswith("Assistant:"):
-        response = response[len("Assistant:") :].strip()
-    return response
+    # response = chain.predict(input=text)
+    # response = ""
+    async for chunk in chain.astream(input=text):
+        print(chunk, end="|", flush=True)
+        # response += chunk + " "
+    # if response.startswith("Assistant:"):
+    #     response = response[len("Assistant:") :].strip()
+    # return response
+    return "done"
+
+
+async def run_chain(text: str, console: Console):
+    async for chunk in chain.astream(input=text):
+        print(chunk, end="", flush=True)
 
 
 def play_audio(sample_rate: int, audio_array: np.array):
@@ -115,8 +142,11 @@ if __name__ == "__main__":
     logger = logging.getLogger(__name__)
     console.print("[cyan]Assistant started! Press Ctrl+C to exit.")
 
+    nest_asyncio.apply()
     try:
         while True:
+            # asyncio.set_event_loop(asyncio.new_event_loop())
+
             console.input(
                 "Press Enter to start recording, then press Enter again to stop."
             )
@@ -144,14 +174,19 @@ if __name__ == "__main__":
                     logger.info(f"Transcribed text from audio: {text}")
                 console.print(f"[yellow]You: {text}")
 
-                with console.status("Generating response...", spinner="earth"):
-                    response = get_llm_response(text)
-                    logger.info(f"Generated response: {response}")
-                    # sample_rate, audio_array = text_to_speech.synthesize_long_text(
-                    #     response
-                    # )
+                # with console.status("Generating response...",
+                # spinner="earth"):
+                console.rule("[cyan]Response")
+                asyncio.run(run_chain(text, console=console))
+                console.print()
+                console.rule()
+                #     response = get_llm_response(text)
+                # logger.info(f"Generated response: {response}")
+                # sample_rate, audio_array = text_to_speech.synthesize_long_text(
+                #     response
+                # )
 
-                console.print(f"[cyan]Assistant: {response}")
+                # console.print(f"[cyan]Assistant: {response}")
                 # play_audio(sample_rate, audio_array)
             else:
                 console.print(
