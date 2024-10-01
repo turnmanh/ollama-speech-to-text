@@ -69,7 +69,12 @@ def main(chain, image_b64: str, console: Console, speech_to_text: whisper.Whispe
                 console.print(
                     response, overflow="fold"
                 )  # Folding of output on overflow.
-                console.print(":clock:", f"Query took {query_end_time - query_start_time:.2f}s.")
+                console.rule()
+                console.print(
+                    ":clock8:",
+                    f"Query took {query_end_time - query_start_time:.2f}s.",
+                    sep=" ",
+                )
                 # play_audio(sample_rate, audio_array)
             else:
                 console.print(
