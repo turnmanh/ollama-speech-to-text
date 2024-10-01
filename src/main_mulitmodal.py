@@ -52,9 +52,7 @@ def main(chain, image_b64: str, console: Console, speech_to_text: whisper.Whispe
                 console.print(f"[yellow]You: {text}")
 
                 with console.status("Generating response...", spinner="earth"):
-                    response = chain.invoke(
-                        {"text": text, "image": image_b64}
-                    )
+                    response = chain.invoke({"text": text, "image": image_b64})
                     logger.info(f"Generated response: {response}")
                     # sample_rate, audio_array = text_to_speech.synthesize_long_text(
                     #     response
@@ -73,8 +71,7 @@ def main(chain, image_b64: str, console: Console, speech_to_text: whisper.Whispe
     console.print("[blue]Session ended.")
 
 
-
-if __name__=="__main__":
+if __name__ == "__main__":
 
     # Inserted logging only in the following lines
     logging.basicConfig(filename="assistant.log", level=logging.WARNING)
@@ -85,7 +82,7 @@ if __name__=="__main__":
     speech_to_text = whisper.load_model("base.en")
 
     # Load the image and convert it to base64.
-    file_path = "../data/img_castle.jpg"
+    file_path = "./data/img_castle.jpg"
     image_b64 = prep_image(image_path=file_path)
 
     # Initialize the model and parser.
@@ -95,7 +92,6 @@ if __name__=="__main__":
     # Create a chain of functions to process the query.
     chain = get_prompt | model | parser
 
-    main(chain=chain, image_b64=image_b64, console=console, speech_to_text=speech_to_text)
-    
-
-    
+    main(
+        chain=chain, image_b64=image_b64, console=console, speech_to_text=speech_to_text
+    )
