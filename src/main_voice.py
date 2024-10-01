@@ -14,10 +14,12 @@ from langchain.prompts import PromptTemplate
 from langchain_community.llms import Ollama, LlamaCpp
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_ollama import ChatOllama
 from queue import Queue
 from rich.console import Console
 from text_to_speech import TextToSpeech
+from prompt_utils import get_session_history
 
 
 console = Console()
@@ -32,23 +34,6 @@ transcript is as follows: {history} And here is the user's follow-up: {input}
 Your response:
 """
 
-# PROMPT = PromptTemplate(input_variables=["history", "input"], template=template)
-# # chain = ConversationChain(
-#     prompt=PROMPT,
-#     verbose=False,
-#     memory=ConversationBufferMemory(ai_prefix="Aissistant:"),
-#     llm=Ollama(
-#         model="gemma:2b"
-#     ),
-#     # llm=LlamaCpp(
-#     #     model_path="/home/maternush/Downloads/llama-2-7b-chat.Q5_K_M.gguf",
-#     #     temperature=0.75,
-#     #     max_tokens=2000,
-#     #     top_p=1,
-#     #     verbose=False,
-#     # ),
-# )
-
 system_msg = """
     You are a helpful and friendly AI assistant. You are polite, respectful, and aim
     to provide concise responses with as little words as possible.
@@ -56,12 +41,21 @@ system_msg = """
 prompt = ChatPromptTemplate.from_messages(
     [
         ("system", system_msg),
+        MessagesPlaceholder(variable_name="history"),
         ("human", "{input}"),
     ]
 )
 model = ChatOllama(model="gemma:2b")
 parser = StrOutputParser()
-chain = prompt | model | parser 
+chain = prompt | model | parser
+
+chain_with_message_history = RunnableWithMessageHistory(
+    chain,
+    get_session_history,
+    input_messages_key="input",
+    history_messages_key="history",
+)
+
 
 def record_audio(stop_event: threading.Event, data_queue: Queue):
     """
@@ -136,7 +130,9 @@ async def run_chain(text: str) -> None:
     Args:
         text: input prompt
     """
-    async for chunk in chain.astream(input=text):
+    async for chunk in chain_with_message_history.astream(
+        {"input": text}, config={"configurable": {"session_id": "abc123"}}
+    ):
         print(chunk, end="", flush=True)
 
 
@@ -210,7 +206,7 @@ if __name__ == "__main__":
                 # sample_rate, audio_array = text_to_speech.synthesize_long_text(
                 #     response
                 # )
-            
+
             if timings:
                 console.rule("[cyan]Timings")
                 console.print(
