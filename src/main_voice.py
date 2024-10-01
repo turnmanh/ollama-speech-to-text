@@ -113,6 +113,11 @@ if __name__ == "__main__":
     # Inserted logging only in the following lines
     logging.basicConfig(filename="assistant.log", level=logging.WARNING)
     logger = logging.getLogger(__name__)
+
+    timings = True
+    verbosity = False
+    timing = {}
+
     console.print("[cyan]Assistant started! Press Ctrl+C to exit.")
 
     try:
@@ -140,18 +145,50 @@ if __name__ == "__main__":
 
             if audio_np.size > 0:
                 with console.status("Transcribing...", spinner="earth"):
+                    # Timing the transcription.
+                    transcribe_start_time = time.time()
                     text = transcribe(audio_np)
+                    transcribe_end_time = time.time()
+                    timing["transcribe"] = transcribe_end_time - transcribe_start_time
+
+                    # Fallback text if no transcription is available.
+                    if len(text) == 0:
+                        if verbosity:
+                            console.print(
+                                f"[yellow]Got an input of length: {len(text)}. Using fallback text."
+                            )
+                        text = "Describe the image to me."
+
                     logger.info(f"Transcribed text from audio: {text}")
-                console.print(f"[yellow]You: {text}")
+
+                console.rule("[cyan]Transcription")
+                console.print(f"[yellow][bold]Me[/bold]: {text}")
 
                 with console.status("Generating response...", spinner="earth"):
+                    # Timing the response generation.
+                    query_time_start = time.time()
                     response = get_llm_response(text)
+                    query_time_end = time.time()
+                    timing["query"] = query_time_end - query_time_start
+
                     logger.info(f"Generated response: {response}")
                     # sample_rate, audio_array = text_to_speech.synthesize_long_text(
                     #     response
                     # )
 
-                console.print(f"[cyan]Assistant: {response}")
+                                    # Print the response separated from the rest of the output and play the audio.
+            console.rule("[cyan]Assistant")
+            console.print(
+                response, overflow="fold"
+            )  # Folding of output on overflow.
+            if timings:
+                console.rule("[cyan]Timings")
+                console.print(
+                    ":clock8:",
+                    f"Transcription in {timing['transcribe']:.2f}s.",
+                    f"Query in {timing['query']:.2f}s.",
+                    sep=" ",
+                )
                 # play_audio(sample_rate, audio_array)
             else:
                 console.print(

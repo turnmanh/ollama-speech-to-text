@@ -58,13 +58,16 @@ def main(
 
                     # Fallback text if no transcription is available.
                     if len(text) == 0:
-                        console.print(
-                            f"[yellow]Got an input of length: {len(text)}. Using fallback text."
-                        )
+                        if verbosity:
+                            console.print(
+                                f"[yellow]Got an input of length: {len(text)}. Using fallback text."
+                            )
                         text = "Describe the image to me."
 
                     logger.info(f"Transcribed text from audio: {text}")
-                console.print(f"[yellow]You: {text}")
+                
+                console.rule("[cyan]Transcription")
+                console.print(f"[yellow][bold]Me[/bold]: {text}")
 
                 with console.status("Generating response...", spinner="earth"):
                     # Time the response generation process.
@@ -108,6 +111,8 @@ if __name__ == "__main__":
     # Inserted logging only in the following lines
     logging.basicConfig(filename="assistant.log", level=logging.WARNING)
     logger = logging.getLogger(__name__)
+
+    verbosity = False
 
     # Initialize the console and the speech recognition model.
     console = Console()
