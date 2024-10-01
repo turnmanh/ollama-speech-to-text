@@ -5,7 +5,7 @@ model.
 
 ## TODOs
 
-- [ ] Add total time 
+- [x] Add total time 
 - [ ] Add time until first token 
 - [ ] Add notes on the hardware used for comparison / disclaimer 
 - [x] Add bold fonts to timing stats
