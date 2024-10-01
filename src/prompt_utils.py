@@ -1,4 +1,9 @@
+from langchain_community.chat_message_histories import ChatMessageHistory
+from langchain_core.chat_history import BaseChatMessageHistory
 from langchain_core.messages import HumanMessage, SystemMessage
+
+
+store = {}
 
 
 def get_system_message(text: str = None) -> SystemMessage:
@@ -50,3 +55,9 @@ def get_prompt(data: dict) -> dict:
     system_message = get_system_message("Which castle is shown in the image?")
 
     return [system_message, human_message]
+
+
+def get_session_history(session_id: str) -> BaseChatMessageHistory:
+    if session_id not in store:
+        store[session_id] = ChatMessageHistory()
+    return store[session_id]
