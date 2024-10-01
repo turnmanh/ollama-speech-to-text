@@ -1,5 +1,6 @@
 import logging
 import numpy as np
+import time
 import threading
 import whisper
 
@@ -46,21 +47,29 @@ def main(chain, image_b64: str, console: Console, speech_to_text: whisper.Whispe
 
                     # Fallback text if no transcription is available.
                     if len(text) == 0:
+                        console.print(
+                            f"[yellow]Got an input of length: {len(text)}. Using fallback text."
+                        )
                         text = "Describe the image to me."
 
                     logger.info(f"Transcribed text from audio: {text}")
                 console.print(f"[yellow]You: {text}")
 
                 with console.status("Generating response...", spinner="earth"):
-                    response = chain.invoke(
-                        {"text": text, "image": image_b64}
-                    )
+                    query_start_time = time.time()
+                    response = chain.invoke({"text": text, "image": image_b64})
+                    query_end_time = time.time()
                     logger.info(f"Generated response: {response}")
                     # sample_rate, audio_array = text_to_speech.synthesize_long_text(
                     #     response
                     # )
 
-                console.print(f"[cyan]Assistant: {response}")
+                # Print the response separated from the rest of the output and play the audio.
+                console.rule("[cyan]Assistant")
+                console.print(
+                    response, overflow="fold"
+                )  # Folding of output on overflow.
+                console.print(":clock:", f"Query took {query_end_time - query_start_time:.2f}s.")
                 # play_audio(sample_rate, audio_array)
             else:
                 console.print(
@@ -73,8 +82,7 @@ def main(chain, image_b64: str, console: Console, speech_to_text: whisper.Whispe
     console.print("[blue]Session ended.")
 
 
-
-if __name__=="__main__":
+if __name__ == "__main__":
 
     # Inserted logging only in the following lines
     logging.basicConfig(filename="assistant.log", level=logging.WARNING)
@@ -85,7 +93,7 @@ if __name__=="__main__":
     speech_to_text = whisper.load_model("base.en")
 
     # Load the image and convert it to base64.
-    file_path = "../data/img_castle.jpg"
+    file_path = "./data/img_castle.jpg"
     image_b64 = prep_image(image_path=file_path)
 
     # Initialize the model and parser.
@@ -95,7 +103,6 @@ if __name__=="__main__":
     # Create a chain of functions to process the query.
     chain = get_prompt | model | parser
 
-    main(chain=chain, image_b64=image_b64, console=console, speech_to_text=speech_to_text)
-    
-
-    
+    main(
+        chain=chain, image_b64=image_b64, console=console, speech_to_text=speech_to_text
+    )
