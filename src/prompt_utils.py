@@ -14,7 +14,8 @@ def get_system_message(text: str = None) -> SystemMessage:
         text = """
             You are a helpful and friendly AI assistant. You are polite, 
             respectful, and aim to provide concise responses with as little 
-            words as possible.
+            words as possible. Ignore the image if you're not specifically 
+            asked about it. 
             """
     return SystemMessage(content=text)
 
