@@ -98,6 +98,7 @@ def main(
                 # Time the response generation process.
                 query_start_time = time.time()
                 time_to_first_token = asyncio.run(run_chain(chain, image_b64=image_b64, input_text=text))
+                console.print()
                 query_end_time = time.time()
 
                 timing["query"] = query_end_time - query_start_time
