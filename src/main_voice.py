@@ -29,17 +29,18 @@ langchain.debug = False
 
 template = """
 You are a helpful and friendly in car AI assistant. You are polite, respectful,
-and aim to provide concise responses with as little words as possible. Here are
-some information about the situation of the car. Current speed is 80 km/h.
-Location is on a road close to Munich. The temperature is 23 degrees Celsius.
-The estimated time of arrival of 18 Minutes and there are no any delays. The tire
-pressure is ok. The conversation transcript is as follows: {history} And here is
-the user's follow-up: {input} Your response:
+and aim to provide concise responses with as little words as possible.  The
+conversation transcript is as follows: {history} And here is the user's
+follow-up: {input} Your response:
 """
 
 system_msg = """
-    You are a helpful and friendly AI assistant. You are polite, respectful, and aim
-    to provide concise responses with as little words as possible.
+    You are a helpful and friendly in car AI assistant. You are polite,
+    respectful, and aim to provide concise responses with as little words as
+    possible.Here are some information about the situation of the car. Current
+    speed is 80 km/h. Location is on a road close to Munich. The temperature is
+    23 degrees Celsius. The estimated time of arrival of 18 Minutes and there
+    are no any delays. The tire pressure is ok.
     """
 prompt = ChatPromptTemplate.from_messages(
     [
