@@ -7,17 +7,18 @@ import threading
 import whisper
 
 from langchain_core.output_parsers import StrOutputParser
+from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_ollama import ChatOllama
 from PIL import Image
 from queue import Queue
 from rich.console import Console
 
 from image_utils import convert_to_base64, prep_image
-from prompt_utils import get_prompt
+from prompt_utils import get_prompt, get_prompt_with_history, get_session_history
 from voice_utils import record_audio, transcribe
 
 
-async def run_chain(chain, image_b64: str, input_text: str) -> float:
+async def run_chain(chain, data: dict) -> float:
     """Runs the chain as an async generator.
 
     This allows to print the output of the chain as it is generated, mimicking a
@@ -30,13 +31,16 @@ async def run_chain(chain, image_b64: str, input_text: str) -> float:
     """
     before_first_token = time.perf_counter()
     chunk_counter = 0
-    
-    async for chunk in chain.astream({"text": input_text, "image": image_b64}):
+    async for chunk in chain.astream(
+        # {"text": input_text, "image": image_b64}
+        {"input": data}, config={"configurable": {"session_id": "abc123"}},
+        ):
         if chunk_counter == 0:
             after_first_token = time.perf_counter()
             chunk_counter += 1
         print(chunk, end="", flush=True)
     return after_first_token - before_first_token
+
 
 def main(
     chain,
@@ -47,7 +51,7 @@ def main(
 ):
     console.print("[cyan]Assistant started! Press Ctrl+C to exit.")
     timing = {}
-    
+
     nest_asyncio.apply()
 
     try:
@@ -90,14 +94,16 @@ def main(
                         text = "Describe the image to me."
 
                     logger.info(f"Transcribed text from audio: {text}")
-                
+
                 console.rule("[cyan]Transcription")
                 console.print(f"[yellow][bold]Me[/bold]: {text}")
 
                 console.rule("[cyan]Assistant")
                 # Time the response generation process.
                 query_start_time = time.time()
-                time_to_first_token = asyncio.run(run_chain(chain, image_b64=image_b64, input_text=text))
+                time_to_first_token = asyncio.run(
+                    run_chain(chain, {"image":image_b64, "text":text})
+                )
                 query_end_time = time.time()
 
                 timing["query"] = query_end_time - query_start_time
@@ -150,10 +156,19 @@ if __name__ == "__main__":
     parser = StrOutputParser()
 
     # Create a chain of functions to process the query.
-    chain = get_prompt | model | parser
+    # chain = get_prompt | model | parser
+    chain = get_prompt_with_history | model | parser
+
+    chain_with_message_history = RunnableWithMessageHistory(
+        chain,
+        get_session_history,
+        input_messages_key="input",
+        history_messages_key="history",
+    )
 
     main(
-        chain=chain,
+        # chain=chain,
+        chain=chain_with_message_history,
         image_b64=image_b64,
         console=console,
         speech_to_text=speech_to_text,

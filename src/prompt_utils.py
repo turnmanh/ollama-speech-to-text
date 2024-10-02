@@ -1,6 +1,10 @@
+import time 
+
 from langchain_community.chat_message_histories import ChatMessageHistory
 from langchain_core.chat_history import BaseChatMessageHistory
 from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.runnables.history import RunnableWithMessageHistory
 
 
 store = {}
@@ -55,6 +59,32 @@ def get_prompt(data: dict) -> dict:
     system_message = get_system_message("Which castle is shown in the image?")
 
     return [system_message, human_message]
+
+
+def get_prompt_with_history(data: dict) -> ChatPromptTemplate:
+    """Provide a prompt for the model with history.
+
+    Args:
+        data: Data to be used in the prompt.
+
+    Returns:
+        ChatPromptTemplate: Prompt for the model with history.
+    """
+    system_msg = """
+        You are a helpful and friendly AI assistant. You are polite, respectful, 
+        and aim to provide concise responses with as little words as possible.
+        If you're not specifically asked about it, ignore the image.
+        """
+    data = data["input"]
+    human_message = get_human_message(data)
+    prompt = ChatPromptTemplate.from_messages(
+        [
+            ("system", system_msg),
+            MessagesPlaceholder(variable_name="history"),
+            human_message,
+        ]
+    )
+    return prompt
 
 
 def get_session_history(session_id: str) -> BaseChatMessageHistory:
