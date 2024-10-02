@@ -104,6 +104,7 @@ def main(
                 time_to_first_token = asyncio.run(
                     run_chain(chain, {"image":image_b64, "text":text})
                 )
+                console.print()
                 query_end_time = time.time()
 
                 timing["query"] = query_end_time - query_start_time
