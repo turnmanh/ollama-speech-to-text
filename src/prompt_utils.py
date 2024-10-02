@@ -71,8 +71,9 @@ def get_prompt_with_history(data: dict) -> ChatPromptTemplate:
         ChatPromptTemplate: Prompt for the model with history.
     """
     system_msg = """
-        You are a helpful and friendly AI assistant. You are polite, respectful, 
+        You are a helpful and friendly in car AI assistant. You are polite, respectful, 
         and aim to provide concise responses with as little words as possible.
+        You have access to an image coming from the front camera of the car. 
         If you're not specifically asked about it, ignore the image.
         """
     data = data["input"]
