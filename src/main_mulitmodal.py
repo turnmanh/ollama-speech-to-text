@@ -146,7 +146,7 @@ if __name__ == "__main__":
     image_b64 = prep_image(image_path=file_path)
 
     # Initialize the model and parser.
-    model = ChatOllama(model="llama3.2:1b")
+    model = ChatOllama(model="moondream")
     parser = StrOutputParser()
 
     # Create a chain of functions to process the query.
