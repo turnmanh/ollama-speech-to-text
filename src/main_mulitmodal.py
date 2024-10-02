@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import nest_asyncio
 import numpy as np
 import time
 import threading
@@ -46,6 +47,8 @@ def main(
 ):
     console.print("[cyan]Assistant started! Press Ctrl+C to exit.")
     timing = {}
+    
+    nest_asyncio.apply()
 
     try:
         while True:
