@@ -121,7 +121,7 @@ def play_audio(sample_rate: int, audio_array: np.array):
     sd.wait()
 
 
-async def run_chain(text: str) -> None:
+async def run_chain(text: str) -> float:
     """Runs the chain as an async generator.
 
     This allows to print the output of the chain as it is generated, mimicking a
@@ -130,11 +130,16 @@ async def run_chain(text: str) -> None:
     Args:
         text: input prompt
     """
+    before_first_token = time.perf_counter()
+    chunk_counter = 0
     async for chunk in chain_with_message_history.astream(
         {"input": text}, config={"configurable": {"session_id": "abc123"}}
     ):
+        if chunk_counter == 0:
+            after_first_token = time.perf_counter()
+            chunk_counter += 1
         print(chunk, end="", flush=True)
-
+    return after_first_token - before_first_token
 
 if __name__ == "__main__":
     # Inserted logging only in the following lines
@@ -196,11 +201,12 @@ if __name__ == "__main__":
 
                 # Timing the response generation.
                 query_time_start = time.time()
-                asyncio.run(run_chain(text))
+                time_to_first_token = asyncio.run(run_chain(text))
                 console.print()
                 query_time_end = time.time()
 
                 timing["query"] = query_time_end - query_time_start
+                timing["time_to_first_token"] = time_to_first_token
 
                 # logger.info(f"Generated response: {response}")
                 # sample_rate, audio_array = text_to_speech.synthesize_long_text(
@@ -212,6 +218,7 @@ if __name__ == "__main__":
                 console.print(
                     ":clock8:",
                     f"[bold]Transcription[/bold] in {timing['transcribe']:.2f}s.",
+                    f"[bold]Time to first token[/bold] {timing['time_to_first_token']:.2f}s.",
                     f"[bold]Total Query[/bold] in {timing['query']:.2f}s.",
                     sep=" ",
                 )
