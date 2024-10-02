@@ -213,15 +213,15 @@ if __name__ == "__main__":
                 #     response
                 # )
 
-            if timings:
-                console.rule("[cyan]Timings")
-                console.print(
-                    ":clock8:",
-                    f"[bold]Transcription[/bold] in {timing['transcribe']:.2f}s.",
-                    f"[bold]Time to first token[/bold] {timing['time_to_first_token']:.2f}s.",
-                    f"[bold]Total Query[/bold] in {timing['query']:.2f}s.",
-                    sep=" ",
-                )
+                if timings:
+                    console.rule("[cyan]Timings")
+                    console.print(
+                        ":clock8:",
+                        f"[bold]Transcription[/bold] in {timing['transcribe']:.2f}s.",
+                        f"[bold]Time to first token[/bold] {timing['time_to_first_token']:.2f}s.",
+                        f"[bold]Total Query[/bold] in {timing['query']:.2f}s.",
+                        sep=" ",
+                    )
                 # play_audio(sample_rate, audio_array)
             else:
                 console.print(

@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import numpy as np
 import time
@@ -14,6 +15,27 @@ from image_utils import convert_to_base64, prep_image
 from prompt_utils import get_prompt
 from voice_utils import record_audio, transcribe
 
+
+async def run_chain(chain, image_b64: str, input_text: str) -> float:
+    """Runs the chain as an async generator.
+
+    This allows to print the output of the chain as it is generated, mimicking a
+    lower latency.
+
+    Args:
+        text: input prompt
+    Returns:
+        float: time taken to generate the first token
+    """
+    before_first_token = time.perf_counter()
+    chunk_counter = 0
+    
+    async for chunk in chain.astream({"text": input_text, "image": image_b64}):
+        if chunk_counter == 0:
+            after_first_token = time.perf_counter()
+            chunk_counter += 1
+        print(chunk, end="", flush=True)
+    return after_first_token - before_first_token
 
 def main(
     chain,
@@ -69,28 +91,26 @@ def main(
                 console.rule("[cyan]Transcription")
                 console.print(f"[yellow][bold]Me[/bold]: {text}")
 
-                with console.status("Generating response...", spinner="earth"):
-                    # Time the response generation process.
-                    query_start_time = time.time()
-                    response = chain.invoke({"text": text, "image": image_b64})
-                    query_end_time = time.time()
-                    timing["query"] = query_end_time - query_start_time
-
-                    logger.info(f"Generated response: {response}")
-                    # sample_rate, audio_array = text_to_speech.synthesize_long_text(
-                    #     response
-                    # )
-
-                # Print the response separated from the rest of the output and play the audio.
                 console.rule("[cyan]Assistant")
-                console.print(
-                    response, overflow="fold"
-                )  # Folding of output on overflow.
+                # Time the response generation process.
+                query_start_time = time.time()
+                time_to_first_token = asyncio.run(run_chain(chain, image_b64=image_b64, input_text=text))
+                query_end_time = time.time()
+
+                timing["query"] = query_end_time - query_start_time
+                timing["time_to_first_token"] = time_to_first_token
+
+                # logger.info(f"Generated response: {response}")
+                # sample_rate, audio_array = text_to_speech.synthesize_long_text(
+                #     response
+                # )
+
                 if timings:
                     console.rule("[cyan]Timings")
                     console.print(
                         ":clock8:",
                         f"[bold]Transcription[/bold] in {timing['transcribe']:.2f}s.",
+                        f"[bold]Time to first token[/bold] {timing['time_to_first_token']:.2f}s.",
                         f"[bold]Total Query[/bold] in {timing['query']:.2f}s.",
                         sep=" ",
                     )
